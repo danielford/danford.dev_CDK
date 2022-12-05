@@ -4,18 +4,9 @@ import * as cdk from 'aws-cdk-lib';
 import { DanfordDevCdkStack } from '../lib/danford-dev-cdk-stack';
 
 const app = new cdk.App();
-new DanfordDevCdkStack(app, 'DanfordDevCdkStack', {
-  /* If you don't specify 'env', this stack will be environment-agnostic.
-   * Account/Region-dependent features and context lookups will not work,
-   * but a single synthesized template can be deployed anywhere. */
 
-  /* Uncomment the next line to specialize this stack for the AWS Account
-   * and Region that are implied by the current CLI configuration. */
-  // env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
-
-  /* Uncomment the next line if you know exactly what Account and Region you
-   * want to deploy the stack to. */
-  // env: { account: '123456789012', region: 'us-east-1' },
-
-  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
+new DanfordDevCdkStack(app, 'DanFordDevTestStack', {
+  env: { account: '797251479904', region: 'us-west-2' },
+  siteDomain: 'test.danford.dev',
+  certificateArn: 'arn:aws:acm:us-east-1:797251479904:certificate/9b94bc2b-e0a5-4316-91b8-25c77ea01aef',
 });
