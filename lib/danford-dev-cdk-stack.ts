@@ -4,9 +4,10 @@ import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfront_origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as path from 'path';
 
 import { Construct } from 'constructs';
-import { doesNotThrow } from 'assert';
 
 interface DanfordDevStackProps extends cdk.StackProps {
   siteDomain: string,
@@ -87,6 +88,28 @@ export class DanfordDevCdkStack extends cdk.Stack {
     });
 
     siteBucket.grantReadWrite(githubUser);
+
+
+    // A Lambda@Edge function to redirect www domain to the canonical (non-www) one
+    const wwwFunc = new cloudfront.experimental.EdgeFunction(this, 'WWWRedirectFunction', {
+      runtime: lambda.Runtime.NODEJS_14_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, 'www-rewrite-lambda')),
+    });
+
+    const wwwDistribution = new cloudfront.Distribution(this, 'WWWDistribution', {
+      certificate: certificate,
+      domainNames: ['www.' + props.siteDomain],
+      defaultBehavior: {
+        origin: new cloudfront_origins.S3Origin(siteBucket, {originAccessIdentity: cloudfrontOAI}),
+        edgeLambdas: [
+          {
+            functionVersion: wwwFunc.currentVersion,
+            eventType: cloudfront.LambdaEdgeEventType.VIEWER_REQUEST,
+          }
+        ],
+      },
+    });
 
   }
 }
