@@ -6,6 +6,7 @@ import * as cloudfront_origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as iam from 'aws-cdk-lib/aws-iam';
 
 import { Construct } from 'constructs';
+import { doesNotThrow } from 'assert';
 
 interface DanfordDevStackProps extends cdk.StackProps {
   siteDomain: string,
@@ -16,8 +17,7 @@ export class DanfordDevCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: DanfordDevStackProps) {
     super(scope, id, props);
 
-    // The code that defines your stack goes here
-
+    // s3 bucket to store all the website assets
     const siteBucket = new s3.Bucket(this, 'WebsiteContent', {
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
@@ -61,5 +61,32 @@ export class DanfordDevCdkStack extends cdk.Stack {
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
       }
     });
+
+
+    // create an IAM user for github actions to use when deploying
+    // (needs to be able to write to s3 bucket and trigger cloudfront invalidation)
+    const githubUser = new iam.User(this, 'GithubUser', {});
+    const accessKey = new iam.CfnAccessKey(this, 'CfnAccessKey', {
+      userName: githubUser.userName,
+    });
+
+    const policy = new iam.ManagedPolicy(this, 'GitHubUserPolicy', {
+      statements: [
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['s3:*'],
+          resources: [siteBucket.bucketArn]
+        }),
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['cloudfront:CreateInvalidation'],
+          resources: ['*']
+        }),
+      ],
+      users: [githubUser]
+    });
+
+    siteBucket.grantReadWrite(githubUser);
+
   }
 }
