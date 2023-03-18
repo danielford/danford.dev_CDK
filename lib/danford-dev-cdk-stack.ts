@@ -42,6 +42,10 @@ export class DanfordDevCdkStack extends cdk.Stack {
 
     const certificate = acm.Certificate.fromCertificateArn(this, 'WebsiteCertificate', props.certificateArn);
 
+    const autoIndexFunc = new cloudfront.Function(this, "AutoIndexFunction", {
+      code: cloudfront.FunctionCode.fromFile({ filePath: path.join(__dirname, 'auto-index-function.js') })
+    });
+
     // CloudFront distribution
     const distribution = new cloudfront.Distribution(this, 'SiteDistribution', {
       certificate: certificate,
@@ -60,7 +64,11 @@ export class DanfordDevCdkStack extends cdk.Stack {
         compress: true,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-      }
+        functionAssociations: [{
+          function: autoIndexFunc,
+          eventType: cloudfront.FunctionEventType.VIEWER_REQUEST
+        }]
+      },
     });
 
 
