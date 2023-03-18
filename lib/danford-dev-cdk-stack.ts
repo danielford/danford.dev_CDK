@@ -40,6 +40,12 @@ export class DanfordDevCdkStack extends cdk.Stack {
       principals: [new iam.CanonicalUserPrincipal(cloudfrontOAI.cloudFrontOriginAccessIdentityS3CanonicalUserId)]
     }));
 
+    siteBucket.addToResourcePolicy(new iam.PolicyStatement({
+      actions: ['s3:ListBucket'],
+      resources: [siteBucket.bucketArn],
+      principals: [new iam.CanonicalUserPrincipal(cloudfrontOAI.cloudFrontOriginAccessIdentityS3CanonicalUserId)]
+    }));
+
     const certificate = acm.Certificate.fromCertificateArn(this, 'WebsiteCertificate', props.certificateArn);
 
     const autoIndexFunc = new cloudfront.Function(this, "AutoIndexFunction", {
