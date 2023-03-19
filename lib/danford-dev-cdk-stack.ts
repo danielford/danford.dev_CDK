@@ -8,6 +8,7 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as path from 'path';
 
 import { Construct } from 'constructs';
+import { CfnTrackerConsumer } from 'aws-cdk-lib/aws-location';
 
 interface DanfordDevStackProps extends cdk.StackProps {
   siteDomain: string,
@@ -27,6 +28,12 @@ export class DanfordDevCdkStack extends cdk.Stack {
       // this is fine b/c the contents are auto-generated from jekyll anyway
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
+    });
+
+    const logsBucket = new s3.Bucket(this, 'WebsiteLogs', {
+      publicReadAccess: false,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
     const cloudfrontOAI = new cloudfront.OriginAccessIdentity(this, 'cloudfront-OAI', {
@@ -58,6 +65,9 @@ export class DanfordDevCdkStack extends cdk.Stack {
       defaultRootObject: "index.html",
       domainNames: [props.siteDomain],
       minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
+      enableLogging: true,
+      logBucket: logsBucket,
+      logIncludesCookies: true,
       errorResponses:[
         {
           httpStatus: 404,
